@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from app.config import settings
 from app.database import Base, engine
 from app.routers import admin, billing, reports
@@ -17,6 +18,10 @@ app.include_router(admin.router)
 app.include_router(billing.router)
 app.include_router(reports.router)
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
+def counter_screen():
+    return FileResponse("app/templates/index.html")
+
+@app.get("/api/status")
 def root_status_check():
     return {"status": "online", "system": settings.PROJECT_NAME}
