@@ -45,7 +45,6 @@
 		.grand { color: var(--teal); font-size: 18px; font-weight: bold; }
 		.field { margin: 12px 0; }
 		label { display: block; margin-bottom: 5px; font: 12px "Trebuchet MS", sans-serif; font-weight: bold; }
-		#phone-field { display: none; }
 		#message { min-height: 20px; margin: 12px 0 0; font: 13px "Trebuchet MS", sans-serif; }
 		.error { color: #9c2920; } .success { color: var(--teal); }
 		.loading { color: var(--muted); font-family: "Trebuchet MS", sans-serif; }
@@ -103,7 +102,6 @@
 		function showMessage(text, type = '') { message.textContent = text; message.className = type; }
 		function updatePhoneRequirement() {
 			const isUpi = document.querySelector('#payment-type').value === 'UPI';
-			document.querySelector('#phone-field').style.display = isUpi ? 'block' : 'none';
 			document.querySelector('#phone-number').required = isUpi;
 		}
 		function renderCatalog() {
