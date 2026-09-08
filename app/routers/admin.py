@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.inventory import Book
-from app.schemas.inventory import BookCreate, BookResponse
+from app.schemas.inventory import BookCreate, BookResponse, BookUpdate
 from app.services.excel_service import ExcelService
 
 router = APIRouter(prefix="/admin", tags=["Administration"])
@@ -25,6 +25,24 @@ def add_book(payload: BookCreate, db: Session = Depends(get_db)):
         available_copies=payload.available_copies
     )
     db.add(book)
+    db.commit()
+    db.refresh(book)
+    return book
+
+@router.patch("/books/{book_id}", response_model=BookResponse)
+def update_book(book_id: int, payload: BookUpdate, db: Session = Depends(get_db)):
+    book = db.query(Book).filter(Book.id == book_id).first()
+    if not book:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Book not found."
+        )
+
+    if payload.original_price is not None:
+        book.original_price = payload.original_price
+    if payload.discount_percentage is not None:
+        book.discount_percentage = payload.discount_percentage
+
     db.commit()
     db.refresh(book)
     return book
