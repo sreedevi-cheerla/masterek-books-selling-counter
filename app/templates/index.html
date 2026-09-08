@@ -108,7 +108,8 @@
 			if (!state.books.length) { catalog.innerHTML = '<p class="loading">No inventory found. Import the inventory sheet from the Admin API first.</p>'; return; }
 			catalog.innerHTML = state.books.map(book => {
 				const price = discountedPrice(book);
-				return `<article class="book"><h2>${escapeHtml(book.name)}</h2><div class="meta">${escapeHtml(book.language)} | ${escapeHtml(book.category)}<br>${book.available_copies} copies available</div><div class="price">${currency(price)} ${book.discount_percentage ? `<s>${currency(book.original_price)}</s>` : ''}</div><footer><input aria-label="Quantity for ${escapeHtml(book.name)}" id="quantity-${book.id}" type="number" min="1" max="${book.available_copies}" value="1"><button type="button" data-book-id="${book.id}">Add</button></footer></article>`;
+				const discountAmount = book.original_price - price;
+				return `<article class="book"><h2>${escapeHtml(book.name)}</h2><div class="meta">${escapeHtml(book.language)} | ${escapeHtml(book.category)}<br>${book.available_copies} copies available</div><div class="price">${currency(price)} ${book.discount_percentage ? `<s>${currency(book.original_price)}</s><br><span class="meta">Discount: ${currency(discountAmount)} (${book.discount_percentage}%)</span>` : ''}</div><footer><input aria-label="Quantity for ${escapeHtml(book.name)}" id="quantity-${book.id}" type="number" min="1" max="${book.available_copies}" value="1"><button type="button" data-book-id="${book.id}">Add</button></footer></article>`;
 			}).join('');
 			catalog.querySelectorAll('button[data-book-id]').forEach(button => button.addEventListener('click', () => addBook(Number(button.dataset.bookId))));
 		}
