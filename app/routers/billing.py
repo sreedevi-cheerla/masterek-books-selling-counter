@@ -3,10 +3,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.inventory import Book
 from app.models.transaction import Transaction, TransactionItem
+from app.schemas.inventory import BookResponse
 from app.schemas.transaction import CheckoutRequest
 from app.services.backup_service import BackupService
 
 router = APIRouter(prefix="/billing", tags=["POS Counter Billing"])
+
+@router.get("/books", response_model=list[BookResponse])
+def list_books(db: Session = Depends(get_db)):
+    return db.query(Book).order_by(Book.name).all()
 
 @router.post("/checkout")
 def checkout(payload: CheckoutRequest, db: Session = Depends(get_db)):
