@@ -31,6 +31,11 @@
 		button.secondary { background: transparent; color: var(--teal); }
 		.checkout { align-self: start; position: sticky; top: 20px; padding: 22px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); box-shadow: 0 14px 30px rgba(54, 45, 32, .08); }
 		.checkout h2 { margin: 0 0 18px; font-size: 23px; }
+		.inventory-form { margin: 0 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 253, 248, .7); }
+		.inventory-form summary { cursor: pointer; font: bold 14px "Trebuchet MS", sans-serif; color: var(--teal); }
+		.inventory-form form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+		.inventory-form .wide { grid-column: 1 / -1; }
+		.inventory-form button { width: fit-content; }
 		.cart-empty { color: var(--muted); font-family: "Trebuchet MS", sans-serif; font-size: 14px; }
 		.cart-row { display: grid; grid-template-columns: 1fr 62px 32px; gap: 8px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); font-family: "Trebuchet MS", sans-serif; font-size: 13px; }
 		.cart-row strong { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 15px; }
@@ -56,6 +61,18 @@
 		<section>
 			<h1>Books in stock</h1>
 			<p class="subhead">Select a quantity for each title, then add it to the bill.</p>
+			<details class="inventory-form">
+				<summary>Add inventory item</summary>
+				<form id="inventory-form">
+					<div class="field wide"><label for="book-name">Book name</label><input id="book-name" required></div>
+					<div class="field"><label for="book-language">Language</label><input id="book-language" required></div>
+					<div class="field"><label for="book-category">Category</label><input id="book-category" required></div>
+					<div class="field"><label for="book-price">Original price (Rs.)</label><input id="book-price" type="number" min="0.01" step="0.01" required></div>
+					<div class="field"><label for="book-discount">Discount (%)</label><input id="book-discount" type="number" min="0" max="100" step="0.01" value="0" required></div>
+					<div class="field"><label for="book-copies">Available copies</label><input id="book-copies" type="number" min="0" step="1" required></div>
+					<button class="wide" type="submit">Add to inventory</button>
+				</form>
+			</details>
 			<div class="catalog" id="catalog"><p class="loading">Loading inventory...</p></div>
 		</section>
 		<aside class="checkout">
@@ -124,6 +141,27 @@
 			item.quantity = quantity; showMessage(''); renderCart();
 		}
 		document.querySelector('#payment-type').addEventListener('change', updatePhoneRequirement);
+		document.querySelector('#inventory-form').addEventListener('submit', async event => {
+			event.preventDefault();
+			const form = event.currentTarget;
+			const button = form.querySelector('button');
+			const payload = {
+				name: document.querySelector('#book-name').value.trim(),
+				language: document.querySelector('#book-language').value.trim(),
+				category: document.querySelector('#book-category').value.trim(),
+				original_price: Number(document.querySelector('#book-price').value),
+				discount_percentage: Number(document.querySelector('#book-discount').value),
+				available_copies: Number(document.querySelector('#book-copies').value)
+			};
+			button.disabled = true; button.textContent = 'Adding...'; showMessage('');
+			try {
+				const response = await fetch('/admin/books', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.detail || 'Unable to add this book.');
+				form.reset(); form.closest('details').open = false; await loadBooks(); showMessage(`${result.name} added to inventory.`, 'success');
+			} catch (error) { showMessage(error.message, 'error'); }
+			finally { button.disabled = false; button.textContent = 'Add to inventory'; }
+		});
 		document.querySelector('#checkout-form').addEventListener('submit', async event => {
 			event.preventDefault();
 			if (!state.cart.size) { showMessage('Add at least one book before completing the sale.', 'error'); return; }
