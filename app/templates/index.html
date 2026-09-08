@@ -1,1 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Guru Pooja Book Counter</title>
+	<style>
+		:root { --ink: #17212b; --paper: #f7f5ef; --panel: #fffdf8; --line: #d9d5c8; --teal: #006b62; --coral: #d5523f; --muted: #68737b; }
+		* { box-sizing: border-box; }
+		body { margin: 0; min-height: 100vh; color: var(--ink); background: linear-gradient(135deg, #e8efe9 0%, var(--paper) 46%, #f5e5d5 100%); font-family: Georgia, "Times New Roman", serif; }
+		header { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px max(24px, calc((100vw - 1200px) / 2)); border-bottom: 1px solid rgba(23, 33, 43, .13); }
+		.brand { font-size: 24px; font-weight: bold; letter-spacing: 0; }
+		.brand small { display: block; margin-top: 3px; color: var(--muted); font-family: "Trebuchet MS", sans-serif; font-size: 12px; font-weight: normal; }
+		.header-links { display: flex; gap: 14px; font-family: "Trebuchet MS", sans-serif; font-size: 14px; }
+		a { color: var(--teal); }
+		main { width: min(1200px, calc(100% - 48px)); margin: 32px auto 56px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(350px, .75fr); gap: 28px; }
+		h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: 0; }
+		.subhead { margin: 0 0 20px; color: var(--muted); font-family: "Trebuchet MS", sans-serif; font-size: 14px; }
+		.catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+		.book { min-height: 180px; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 253, 248, .84); display: flex; flex-direction: column; }
+		.book h2 { margin: 0 0 7px; font-size: 19px; line-height: 1.2; }
+		.meta { color: var(--muted); font-family: "Trebuchet MS", sans-serif; font-size: 12px; }
+		.price { margin-top: auto; padding-top: 16px; font-family: "Trebuchet MS", sans-serif; font-weight: bold; }
+		.price s { color: var(--muted); font-size: 12px; font-weight: normal; margin-left: 5px; }
+		.book footer { display: flex; gap: 8px; margin-top: 12px; }
+		input, select, button { min-height: 40px; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); font: 14px "Trebuchet MS", sans-serif; }
+		input, select { width: 100%; padding: 9px; background: #fff; }
+		.book input { width: 65px; }
+		button { padding: 9px 14px; cursor: pointer; background: var(--teal); color: #fff; border-color: var(--teal); font-weight: bold; }
+		button:hover { filter: brightness(.92); }
+		button.secondary { background: transparent; color: var(--teal); }
+		.checkout { align-self: start; position: sticky; top: 20px; padding: 22px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); box-shadow: 0 14px 30px rgba(54, 45, 32, .08); }
+		.checkout h2 { margin: 0 0 18px; font-size: 23px; }
+		.cart-empty { color: var(--muted); font-family: "Trebuchet MS", sans-serif; font-size: 14px; }
+		.cart-row { display: grid; grid-template-columns: 1fr 62px 32px; gap: 8px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); font-family: "Trebuchet MS", sans-serif; font-size: 13px; }
+		.cart-row strong { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 15px; }
+		.icon { min-width: 32px; padding: 0; background: transparent; color: var(--coral); border-color: transparent; font-size: 20px; }
+		.totals { margin: 16px 0; padding: 15px 0; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); font-family: "Trebuchet MS", sans-serif; }
+		.total-line { display: flex; justify-content: space-between; margin: 8px 0; }
+		.grand { color: var(--teal); font-size: 18px; font-weight: bold; }
+		.field { margin: 12px 0; }
+		label { display: block; margin-bottom: 5px; font: 12px "Trebuchet MS", sans-serif; font-weight: bold; }
+		#phone-field { display: none; }
+		#message { min-height: 20px; margin: 12px 0 0; font: 13px "Trebuchet MS", sans-serif; }
+		.error { color: #9c2920; } .success { color: var(--teal); }
+		.loading { color: var(--muted); font-family: "Trebuchet MS", sans-serif; }
+		@media (max-width: 820px) { header { padding: 18px 20px; } main { width: min(100% - 32px, 600px); margin-top: 24px; grid-template-columns: 1fr; } .checkout { position: static; order: -1; } .catalog { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
+	</style>
+</head>
+<body>
+	<header>
+		<div class="brand">Guru Pooja Book Counter<small>Master EK books | Counter billing</small></div>
+		<nav class="header-links"><a href="/docs" target="_blank">Admin &amp; reports</a></nav>
+	</header>
+	<main>
+		<section>
+			<h1>Books in stock</h1>
+			<p class="subhead">Select a quantity for each title, then add it to the bill.</p>
+			<div class="catalog" id="catalog"><p class="loading">Loading inventory...</p></div>
+		</section>
+		<aside class="checkout">
+			<h2>Current sale</h2>
+			<div id="cart"><p class="cart-empty">No books added yet.</p></div>
+			<div class="totals">
+				<div class="total-line"><span>Original total</span><span id="original-total">Rs. 0.00</span></div>
+				<div class="total-line"><span>Discount</span><span id="discount-total">Rs. 0.00</span></div>
+				<div class="total-line grand"><span>Amount payable</span><span id="payable-total">Rs. 0.00</span></div>
+			</div>
+			<form id="checkout-form">
+				<div class="field"><label for="customer-name">Customer name</label><input id="customer-name" required autocomplete="name"></div>
+				<div class="field"><label for="payment-type">Payment method</label><select id="payment-type"><option value="Cash">Cash</option><option value="UPI">UPI</option></select></div>
+				<div class="field" id="phone-field"><label for="phone-number">Phone number</label><input id="phone-number" type="tel" inputmode="numeric" autocomplete="tel"></div>
+				<button id="complete-sale" type="submit">Complete sale</button>
+			</form>
+			<p id="message" role="status"></p>
+		</aside>
+	</main>
+	<script>
+		const state = { books: [], cart: new Map() };
+		const currency = amount => `Rs. ${amount.toFixed(2)}`;
+		const discountedPrice = book => book.original_price * (1 - book.discount_percentage / 100);
+		const catalog = document.querySelector('#catalog');
+		const cartElement = document.querySelector('#cart');
+		const message = document.querySelector('#message');
+
+		function showMessage(text, type = '') { message.textContent = text; message.className = type; }
+		function updatePhoneRequirement() {
+			const isUpi = document.querySelector('#payment-type').value === 'UPI';
+			document.querySelector('#phone-field').style.display = isUpi ? 'block' : 'none';
+			document.querySelector('#phone-number').required = isUpi;
+		}
+		function renderCatalog() {
+			if (!state.books.length) { catalog.innerHTML = '<p class="loading">No inventory found. Import the inventory sheet from the Admin API first.</p>'; return; }
+			catalog.innerHTML = state.books.map(book => {
+				const price = discountedPrice(book);
+				return `<article class="book"><h2>${escapeHtml(book.name)}</h2><div class="meta">${escapeHtml(book.language)} | ${escapeHtml(book.category)}<br>${book.available_copies} copies available</div><div class="price">${currency(price)} ${book.discount_percentage ? `<s>${currency(book.original_price)}</s>` : ''}</div><footer><input aria-label="Quantity for ${escapeHtml(book.name)}" id="quantity-${book.id}" type="number" min="1" max="${book.available_copies}" value="1"><button type="button" data-book-id="${book.id}">Add</button></footer></article>`;
+			}).join('');
+			catalog.querySelectorAll('button[data-book-id]').forEach(button => button.addEventListener('click', () => addBook(Number(button.dataset.bookId))));
+		}
+		function escapeHtml(value) { const element = document.createElement('span'); element.textContent = value; return element.innerHTML; }
+		function addBook(bookId) {
+			const book = state.books.find(item => item.id === bookId);
+			const input = document.querySelector(`#quantity-${bookId}`);
+			const quantity = Number(input.value);
+			const current = state.cart.get(bookId)?.quantity || 0;
+			if (!Number.isInteger(quantity) || quantity < 1 || current + quantity > book.available_copies) { showMessage(`Enter an available quantity for ${book.name}.`, 'error'); return; }
+			state.cart.set(bookId, { book, quantity: current + quantity });
+			showMessage(''); renderCart();
+		}
+		function renderCart() {
+			const items = [...state.cart.values()];
+			cartElement.innerHTML = items.length ? items.map(({ book, quantity }) => `<div class="cart-row"><span><strong>${escapeHtml(book.name)}</strong>${quantity} x ${currency(discountedPrice(book))}</span><input aria-label="Cart quantity for ${escapeHtml(book.name)}" type="number" min="1" max="${book.available_copies}" value="${quantity}" data-cart-id="${book.id}"><button class="icon" type="button" aria-label="Remove ${escapeHtml(book.name)}" data-remove-id="${book.id}">&times;</button></div>`).join('') : '<p class="cart-empty">No books added yet.</p>';
+			cartElement.querySelectorAll('[data-cart-id]').forEach(input => input.addEventListener('change', event => updateCartQuantity(Number(event.target.dataset.cartId), Number(event.target.value))));
+			cartElement.querySelectorAll('[data-remove-id]').forEach(button => button.addEventListener('click', () => { state.cart.delete(Number(button.dataset.removeId)); renderCart(); }));
+			const original = items.reduce((sum, item) => sum + item.book.original_price * item.quantity, 0);
+			const payable = items.reduce((sum, item) => sum + discountedPrice(item.book) * item.quantity, 0);
+			document.querySelector('#original-total').textContent = currency(original);
+			document.querySelector('#discount-total').textContent = currency(original - payable);
+			document.querySelector('#payable-total').textContent = currency(payable);
+		}
+		function updateCartQuantity(bookId, quantity) {
+			const item = state.cart.get(bookId);
+			if (!Number.isInteger(quantity) || quantity < 1 || quantity > item.book.available_copies) { showMessage(`Enter an available quantity for ${item.book.name}.`, 'error'); renderCart(); return; }
+			item.quantity = quantity; showMessage(''); renderCart();
+		}
+		document.querySelector('#payment-type').addEventListener('change', updatePhoneRequirement);
+		document.querySelector('#checkout-form').addEventListener('submit', async event => {
+			event.preventDefault();
+			if (!state.cart.size) { showMessage('Add at least one book before completing the sale.', 'error'); return; }
+			const button = document.querySelector('#complete-sale'); button.disabled = true; button.textContent = 'Saving sale...'; showMessage('');
+			const payload = { customer_name: document.querySelector('#customer-name').value.trim(), payment_type: document.querySelector('#payment-type').value, phone_number: document.querySelector('#phone-number').value.trim() || null, items: [...state.cart.entries()].map(([book_id, item]) => ({ book_id, quantity: item.quantity })) };
+			try {
+				const response = await fetch('/billing/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.detail || 'Unable to complete this sale.');
+				showMessage(`Sale #${result.transaction_id} completed. Amount paid: ${currency(result.total_payable)}.`, 'success');
+				state.cart.clear(); document.querySelector('#checkout-form').reset(); updatePhoneRequirement(); await loadBooks(); renderCart();
+			} catch (error) { showMessage(error.message, 'error'); }
+			finally { button.disabled = false; button.textContent = 'Complete sale'; }
+		});
+		async function loadBooks() { try { const response = await fetch('/billing/books'); if (!response.ok) throw new Error(); state.books = await response.json(); renderCatalog(); } catch { catalog.innerHTML = '<p class="loading">Could not load inventory. Refresh the page after the service is available.</p>'; } }
+		loadBooks(); updatePhoneRequirement();
+	</script>
+</body>
+</html>
 
