@@ -16,6 +16,7 @@
 		main { width: min(1200px, calc(100% - 48px)); margin: 32px auto 56px; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(350px, .75fr); gap: 28px; }
 		h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: 0; }
 		.subhead { margin: 0 0 20px; color: var(--muted); font-family: "Trebuchet MS", sans-serif; font-size: 14px; }
+		.search-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(160px, 1fr); gap: 10px; margin: 0 0 20px; }
 		.catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 		.book { min-height: 180px; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: rgba(255, 253, 248, .84); display: flex; flex-direction: column; }
 		.book h2 { margin: 0 0 7px; font-size: 19px; line-height: 1.2; }
@@ -49,6 +50,7 @@
 		.error { color: #9c2920; } .success { color: var(--teal); }
 		.loading { color: var(--muted); font-family: "Trebuchet MS", sans-serif; }
 		@media (max-width: 820px) { header { padding: 18px 20px; } main { width: min(100% - 32px, 600px); margin-top: 24px; grid-template-columns: 1fr; } .checkout { position: static; order: -1; } .catalog { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
+		@media (max-width: 480px) { .search-fields { grid-template-columns: 1fr; } }
 	</style>
 </head>
 <body>
@@ -60,6 +62,10 @@
 		<section>
 			<h1>Books in stock</h1>
 			<p class="subhead">Select a quantity for each title, then add it to the bill.</p>
+			<div class="search-fields">
+				<div><label for="book-search">Search book name</label><input id="book-search" type="search" placeholder="Type a title"></div>
+				<div><label for="language-filter">Language</label><select id="language-filter"><option value="">All languages</option></select></div>
+			</div>
 			<details class="inventory-form">
 				<summary>Add inventory item</summary>
 				<form id="inventory-form">
@@ -116,8 +122,19 @@
 		function renderCatalog() {
 			const editBook = document.querySelector('#edit-book');
 			editBook.innerHTML = state.books.map(book => `<option value="${book.id}">${escapeHtml(book.name)}</option>`).join('');
+			const languageFilter = document.querySelector('#language-filter');
+			const selectedLanguage = languageFilter.value;
+			const languages = [...new Set(state.books.map(book => book.language))].sort();
+			languageFilter.innerHTML = `<option value="">All languages</option>${languages.map(language => `<option value="${escapeHtml(language)}">${escapeHtml(language)}</option>`).join('')}`;
+			languageFilter.value = selectedLanguage;
 			if (!state.books.length) { catalog.innerHTML = '<p class="loading">No inventory found. Import the inventory sheet from the Admin API first.</p>'; return; }
-			catalog.innerHTML = state.books.map(book => {
+			const searchTerm = document.querySelector('#book-search').value.trim().toLowerCase();
+			const filteredBooks = state.books.filter(book =>
+				book.name.toLowerCase().includes(searchTerm) &&
+				(!selectedLanguage || book.language === selectedLanguage)
+			);
+			if (!filteredBooks.length) { catalog.innerHTML = '<p class="loading">No books match this search.</p>'; return; }
+			catalog.innerHTML = filteredBooks.map(book => {
 				const price = discountedPrice(book);
 				const discountAmount = book.original_price - price;
 				return `<article class="book"><h2>${escapeHtml(book.name)}</h2><div class="meta">${escapeHtml(book.language)} | ${escapeHtml(book.category)}<br>${book.available_copies} copies available</div><div class="price">${currency(price)} ${book.discount_percentage ? `<s>${currency(book.original_price)}</s><br><span class="meta">Discount: ${currency(discountAmount)} (${book.discount_percentage}%)</span>` : ''}</div><footer><input aria-label="Quantity for ${escapeHtml(book.name)}" id="quantity-${book.id}" type="number" min="1" max="${book.available_copies}" value="1"><button type="button" data-book-id="${book.id}">Add</button></footer></article>`;
@@ -151,6 +168,8 @@
 			item.quantity = quantity; showMessage(''); renderCart();
 		}
 		document.querySelector('#payment-type').addEventListener('change', updatePhoneRequirement);
+		document.querySelector('#book-search').addEventListener('input', renderCatalog);
+		document.querySelector('#language-filter').addEventListener('change', renderCatalog);
 		document.querySelector('#book-update-form').addEventListener('submit', async event => {
 			event.preventDefault();
 			const form = event.currentTarget;
